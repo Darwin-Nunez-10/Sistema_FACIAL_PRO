@@ -1,0 +1,48 @@
+# MySQL + phpMyAdmin (solo infraestructura de BD).
+# La aplicacion Python corre en el host; en .env use MYSQL_HOST=127.0.0.1 y el mismo
+# MYSQL_DATABASE, MYSQL_USER y MYSQL_PASSWORD que aqui (o deje los valores por defecto solo para pruebas).
+#
+# Variables opcionales en .env (Compose las sustituye automaticamente):
+#   MYSQL_ROOT_PASSWORD  - clave del usuario root dentro del contenedor
+#   MYSQL_DATABASE       - coincide con config.py (por defecto facial_pro_db)
+#   MYSQL_USER           - usuario de aplicacion creado por la imagen
+#   MYSQL_PASSWORD       - clave de ese usuario
+#   MYSQL_PORT           - puerto en el host (por defecto 3306)
+#   PMA_HTTP_PORT        - puerto en el HOST para la web de phpMyAdmin (por defecto 8090).
+#                         No use PMA_PORT aqui: en la imagen oficial PMA_PORT es el puerto de MySQL (3306).
+#
+# Arranque: docker compose up -d
+# phpMyAdmin: http://127.0.0.1:<PMA_HTTP_PORT>
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: sistema_facial_mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-cambiar_root}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-facial_pro_db}
+      MYSQL_USER: ${MYSQL_USER:-facial_app}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-cambiar_app}
+    ports:
+      - "${MYSQL_PORT:-3306}:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      # Solo se ejecuta al crear el volumen vacio (primer arranque). Ver README.
+      - ./sql/facial_pro_db_schema.sql:/docker-entrypoint-initdb.d/01_facial_pro_db.sql:ro
+
+  phpmyadmin:
+    image: phpmyadmin:5
+    container_name: sistema_facial_phpmyadmin
+    restart: unless-stopped
+    environment:
+      PMA_HOST: mysql
+      PMA_PORT: 3306
+      PMA_ARBITRARY: "0"
+    ports:
+      - "${PMA_HTTP_PORT:-8090}:80"
+    depends_on:
+      - mysql
+
+volumes:
+  mysql_data:

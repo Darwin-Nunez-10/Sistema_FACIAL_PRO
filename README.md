@@ -7,16 +7,19 @@ Aplicacion de escritorio en Python para control de ingreso con reconocimiento fa
 ```
 Sistema_FACIAL_PRO/
 ??? data/
-?   ??? known_faces/      # Fotos de empleados autorizados
-?   ??? unknown_faces/    # Capturas de auditoria (alertas)
+?   ??? known_faces/
+?   ??? unknown_faces/
+??? sql/
+?   ??? facial_pro_db_schema.sql   # Esquema MySQL (facial_pro_db)
 ??? src/
-?   ??? gui.py            # Interfaz grafica
-?   ??? database.py       # MySQL
-?   ??? detector.py       # Reconocimiento y cifrado
-?   ??? notifications.py  # Email y alertas
+?   ??? gui.py
+?   ??? database.py
+?   ??? detector.py
+?   ??? notifications.py
 ?   ??? utils.py
 ??? main.py
 ??? config.py
+??? docker-compose.yml             # MySQL + phpMyAdmin (opcional)
 ??? requirements.txt
 ??? README.md
 ```
@@ -24,7 +27,7 @@ Sistema_FACIAL_PRO/
 ## Requisitos
 
 - Python 3.10 o superior (recomendado)
-- Servidor MySQL (para las tablas de empleados y registro de accesos)
+- Servidor MySQL 8 (local o Docker)
 
 ## Instalacion
 
@@ -32,23 +35,38 @@ Sistema_FACIAL_PRO/
 cd Sistema_FACIAL_PRO
 python -m venv .venv
 source .venv/bin/activate   # Linux/macOS
-# .venv\Scripts\activate    # Windows
 pip install -r requirements.txt
 ```
 
 ## Configuracion
 
-1. Copie `.env.example` a `.env` y complete los valores (el archivo `.env` no se sube al repositorio).
-2. O exporte las mismas variables en su shell antes de ejecutar la aplicacion.
+1. Copie `.env.example` a `.env` y ponga **sus** credenciales locales (`MYSQL_*`, etc.).
+2. Nombre de base por defecto del proyecto: **`facial_pro_db`** (`MYSQL_DATABASE`).
 
-Variables principales: `MYSQL_HOST`, `MYSQL_USER`, `MYSQL_PASSWORD`, `MYSQL_DATABASE`, y para correo `SMTP_*` y `SECURITY_EMAIL`.
+## Base de datos `facial_pro_db`
 
-## MySQL (esquema orientativo)
+Script versionado: [`sql/facial_pro_db_schema.sql`](sql/facial_pro_db_schema.sql).
 
-- **empleados**: id, nombre (cifrado), codigo de empleado, ruta de imagen.
-- **registro_acceso**: id, empleado_id, fecha_hora, estado del acceso.
+- **empleados**: `id`, `nombre_cifrado`, `codigo_empleado` (unico), `ruta_imagen`, `creado_en`.
+- **registro_acceso**: `id`, `empleado_id` (FK, nullable), `fecha_hora` (DATETIME(6)), `estado`.
 
-El script SQL concreto se anadira al implementar el modulo `database.py`.
+### Aplicar el esquema manualmente
+
+```bash
+mysql -h 127.0.0.1 -P 3306 -u TU_USUARIO -p < sql/facial_pro_db_schema.sql
+```
+
+O importar / pegar el SQL en phpMyAdmin.
+
+### Docker Compose (MySQL + phpMyAdmin)
+
+En el **primer** arranque con volumen de datos nuevo, el contenedor ejecuta el mismo script desde `docker-entrypoint-initdb.d`. Si ya tenia datos el volumen `mysql_data`, el script **no** se vuelve a ejecutar: aplique `sql/facial_pro_db_schema.sql` a mano o borre el volumen sabiendo que perdera datos.
+
+```bash
+docker compose up -d
+```
+
+phpMyAdmin queda en `http://127.0.0.1:8090` por defecto. Si el puerto esta ocupado, en `.env` defina otro, por ejemplo `PMA_HTTP_PORT=8091`. No use `PMA_PORT` para el puerto web: en la imagen oficial es el de conexion a MySQL.
 
 ## Ejecucion
 
@@ -56,24 +74,20 @@ El script SQL concreto se anadira al implementar el modulo `database.py`.
 python main.py
 ```
 
-La interfaz y el flujo completo se iran completando por modulos.
-
 ## Publicar en GitHub
 
-Con [GitHub CLI](https://cli.github.com/) (`gh`), desde la raiz del proyecto y con sesion valida (`gh auth login`):
+Con [GitHub CLI](https://cli.github.com/) (`gh`):
 
 ```bash
 gh repo create Sistema_FACIAL_PRO --public --source=. --remote=origin --push
 ```
 
-Ajuste `--public` a `--private` si lo necesita. Si el repositorio ya existe en GitHub:
+Si el repo ya existe:
 
 ```bash
 git remote add origin https://github.com/TU_USUARIO/Sistema_FACIAL_PRO.git
 git push -u origin main
 ```
-
-(Con SSH: `git@github.com:TU_USUARIO/Sistema_FACIAL_PRO.git`.)
 
 ## Licencia
 
