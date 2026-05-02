@@ -1,0 +1,46 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Entornos virtuales
+.venv/
+venv/
+ENV/
+
+# Secretos y entorno local
+.env
+*.pem
+
+# Bases de datos locales
+*.sqlite
+*.db
+
+# IDE
+.idea/
+.vscode/
+
+# Datos sensibles (imágenes reales en desarrollo; descomente si no desea versionar muestras)
+# data/known_faces/*
+# !data/known_faces/.gitkeep
+
+# Modelos / artefactos pesados (ajustar según el proyecto)
+# *.onnx
+# *.pt

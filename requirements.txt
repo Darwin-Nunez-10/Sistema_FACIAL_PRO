@@ -1,0 +1,6 @@
+# GUI y video (punto 1)
+opencv-python>=4.8.0
+
+# Base de datos y cifrado (añadir versiones al implementar database/detector)
+# mysql-connector-python>=8.0.0
+# cryptography>=41.0.0
