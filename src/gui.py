@@ -11,7 +11,8 @@ import cv2
 import face_recognition
 from PIL import Image, ImageTk
 
-from src.database import fetch_recent_access_rows
+import config
+from src.database import db_last_error, fetch_recent_access_rows
 
 # Escala para acelerar deteccion (face_recognition sobre frame reducido)
 _FACE_SCALE = 0.25
@@ -177,9 +178,16 @@ class MainWindow:
                 ),
             )
         if not rows:
-            self._status.configure(
-                text="Panel: sin datos o sin conexion MySQL (revise .env y tablas)."
-            )
+            err = db_last_error()
+            if err:
+                self._status.configure(
+                    text=f"MySQL: {err} | Host {config.MYSQL_HOST}:{config.MYSQL_PORT} "
+                    f"(levante Docker o revise .env)"
+                )
+            else:
+                self._status.configure(
+                    text="Panel: sin filas en registro_acceso (BD conectada)."
+                )
         else:
             self._status.configure(text=f"Panel actualizado: {len(rows)} filas.")
         self._root.after(_PANEL_REFRESH_MS, self._tick_panel)

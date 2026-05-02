@@ -9,10 +9,20 @@ from mysql.connector import Error as MySQLError
 
 import config
 
+_last_db_error: str | None = None
+
+
+def db_last_error() -> str | None:
+    """Ultimo mensaje de error de conexion o consulta (para la barra de estado)."""
+    return _last_db_error
+
 
 def get_connection() -> mysql.connector.MySQLConnection | None:
     """Abre una conexion usando config (variables de entorno)."""
+    global _last_db_error
+    _last_db_error = None
     if not config.MYSQL_USER or not config.MYSQL_PASSWORD:
+        _last_db_error = "Faltan MYSQL_USER o MYSQL_PASSWORD en .env"
         return None
     try:
         return mysql.connector.connect(
@@ -22,7 +32,8 @@ def get_connection() -> mysql.connector.MySQLConnection | None:
             password=config.MYSQL_PASSWORD,
             database=config.MYSQL_DATABASE,
         )
-    except MySQLError:
+    except MySQLError as exc:
+        _last_db_error = f"{exc.errno}: {exc.msg}" if exc.errno else str(exc)
         return None
 
 
@@ -31,6 +42,7 @@ def fetch_recent_access_rows(limit: int = 30) -> list[dict[str, Any]]:
     Ultimos registros de acceso para el panel lateral.
     Incluye codigo de empleado si hay JOIN (sin descifrar nombre).
     """
+    global _last_db_error
     conn = get_connection()
     if conn is None:
         return []
@@ -54,7 +66,8 @@ def fetch_recent_access_rows(limit: int = 30) -> list[dict[str, Any]]:
         )
         rows = cursor.fetchall()
         return list(rows)
-    except MySQLError:
+    except MySQLError as exc:
+        _last_db_error = f"{exc.errno}: {exc.msg}" if exc.errno else str(exc)
         return []
     finally:
         if cursor is not None:

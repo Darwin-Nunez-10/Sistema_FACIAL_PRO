@@ -10,8 +10,11 @@ PROJECT_ROOT = Path(__file__).resolve().parent
 KNOWN_FACES_DIR = PROJECT_ROOT / "data" / "known_faces"
 UNKNOWN_FACES_DIR = PROJECT_ROOT / "data" / "unknown_faces"
 
-# MySQL
-MYSQL_HOST = os.environ.get("MYSQL_HOST", "127.0.0.1")
+# MySQL (localhost -> 127.0.0.1 evita fallo con Docker en Linux: ::1 vs IPv4)
+_raw_mysql_host = os.environ.get("MYSQL_HOST", "127.0.0.1").strip()
+MYSQL_HOST = (
+    "127.0.0.1" if _raw_mysql_host.lower() in ("localhost", "::1") else _raw_mysql_host
+)
 MYSQL_PORT = int(os.environ.get("MYSQL_PORT", "3306"))
 MYSQL_USER = os.environ.get("MYSQL_USER", "")
 MYSQL_PASSWORD = os.environ.get("MYSQL_PASSWORD", "")
