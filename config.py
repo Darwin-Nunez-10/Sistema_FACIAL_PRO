@@ -1,12 +1,12 @@
-"""Configuración desde variables de entorno. No almacene secretos en el código."""
+"""Config from environment variables. Do not store real secrets in source code."""
 
 import os
 from pathlib import Path
 
-# Raíz del proyecto (directorio que contiene main.py)
+# Project root (directory containing main.py)
 PROJECT_ROOT = Path(__file__).resolve().parent
 
-# Rutas de datos
+# Data paths
 KNOWN_FACES_DIR = PROJECT_ROOT / "data" / "known_faces"
 UNKNOWN_FACES_DIR = PROJECT_ROOT / "data" / "unknown_faces"
 
@@ -17,7 +17,7 @@ MYSQL_USER = os.environ.get("MYSQL_USER", "")
 MYSQL_PASSWORD = os.environ.get("MYSQL_PASSWORD", "")
 MYSQL_DATABASE = os.environ.get("MYSQL_DATABASE", "facial_pro_db")
 
-# Correo (notificaciones)
+# Email (notifications)
 SMTP_HOST = os.environ.get("SMTP_HOST", "")
 SMTP_PORT = int(os.environ.get("SMTP_PORT", "587"))
 SMTP_USER = os.environ.get("SMTP_USER", "")

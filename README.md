@@ -10,7 +10,7 @@ Sistema_FACIAL_PRO/
 ?   ??? known_faces/
 ?   ??? unknown_faces/
 ??? sql/
-?   ??? facial_pro_db_schema.sql   # Esquema MySQL (facial_pro_db)
+?   ??? facial_pro_db_schema.sql
 ??? src/
 ?   ??? gui.py
 ?   ??? database.py
@@ -19,7 +19,7 @@ Sistema_FACIAL_PRO/
 ?   ??? utils.py
 ??? main.py
 ??? config.py
-??? docker-compose.yml             # MySQL + phpMyAdmin (opcional)
+??? docker-compose.yml
 ??? requirements.txt
 ??? README.md
 ```
@@ -28,6 +28,21 @@ Sistema_FACIAL_PRO/
 
 - Python 3.10 o superior (recomendado)
 - Servidor MySQL 8 (local o Docker)
+- Linux: paquete **tkinter** (`sudo apt install python3-tk` en Debian/Ubuntu)
+- **face_recognition** compila **dlib**; puede necesitar `build-essential`, `cmake` y librerias de desarrollo (ver documentacion de `dlib` / `face_recognition`)
+
+## Librerias (lista del profesor y uso)
+
+| Libreria | Punto 1 (esta entrega) | Nota |
+|----------|------------------------|------|
+| opencv-python | Si | Video y dibujo de rectangulos |
+| face_recognition | Si | Deteccion de rostros (bounding boxes) |
+| mysql-connector-python | Si | Panel de ultimos registros |
+| tkinter o PyQt5 | Si | Aqui se usa **tkinter** (incluido en Python; en Linux instalar `python3-tk`) |
+| Pillow | Si (soporte) | Para mostrar fotogramas en Tkinter (`ImageTk`) |
+| python-dotenv | Si (soporte) | Carga `.env` al ejecutar `main.py` |
+| cryptography | No aun | Cifrado de datos personales (otros modulos) |
+| smtplib | No aun | Correo (biblioteca estandar; sin `pip`) |
 
 ## Instalacion
 
@@ -42,6 +57,7 @@ pip install -r requirements.txt
 
 1. Copie `.env.example` a `.env` y ponga **sus** credenciales locales (`MYSQL_*`, etc.).
 2. Nombre de base por defecto del proyecto: **`facial_pro_db`** (`MYSQL_DATABASE`).
+3. **Docker Compose y Python:** si en `.env` usa `$$` para un `$` en la clave (solo interpretacion de Compose), `python-dotenv` puede cargar la cadena tal cual y la app no conectaria. En desarrollo use clave **sin caracter `$`** o exporte `MYSQL_PASSWORD` en la terminal con el valor exacto antes de `python main.py`.
 
 ## Base de datos `facial_pro_db`
 

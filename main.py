@@ -1,5 +1,9 @@
 """Punto de entrada del sistema de control de acceso facial."""
 
+from dotenv import load_dotenv
+
+load_dotenv()
+
 from src.gui import MainWindow
 
 
