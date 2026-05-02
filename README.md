@@ -6,23 +6,48 @@ Aplicacion de escritorio en Python para control de ingreso con reconocimiento fa
 
 ```
 Sistema_FACIAL_PRO/
-??? data/
-?   ??? known_faces/
-?   ??? unknown_faces/
-??? sql/
-?   ??? facial_pro_db_schema.sql
-??? src/
-?   ??? gui.py
-?   ??? database.py
-?   ??? detector.py
-?   ??? notifications.py
-?   ??? utils.py
-??? main.py
-??? config.py
-??? docker-compose.yml
-??? requirements.txt
-??? README.md
+├── data/
+│   ├── known_faces/
+│   └── unknown_faces/
+├── sql/
+│   └── facial_pro_db_schema.sql
+├── src/
+│   ├── gui.py
+│   ├── database.py
+│   ├── detector.py
+│   ├── notifications.py
+│   └── utils.py
+├── main.py
+├── config.py
+├── docker-compose.yml
+├── requirements.txt
+└── README.md
 ```
+
+## Guia para el equipo: probar lo mismo en otra PC
+
+Orden recomendado (misma prueba que en desarrollo: video + panel MySQL):
+
+1. **Clonar** el repositorio y entrar a la carpeta del proyecto.
+2. **Python y venv**
+   - `python3 -m venv .venv`
+   - Linux: si falla, `sudo apt install python3-venv python3-tk` (tkinter + venv).
+3. **Activar** el entorno: `source .venv/bin/activate` (Windows: `.venv\Scripts\activate`).
+4. **Instalar** dependencias: `pip install -r requirements.txt` (puede tardar por `dlib` / `face_recognition`).
+5. **Configurar** copiando `.env.example` a `.env` y rellenando:
+   - `MYSQL_HOST=127.0.0.1`, `MYSQL_PORT=3306`, `MYSQL_DATABASE=facial_pro_db`
+   - Mismo `MYSQL_USER` y `MYSQL_PASSWORD` que usen para MySQL (ver paso 6).
+   - Evitar `$` en la clave o cuidar `$$` en Docker frente a lo que lee `python-dotenv` (ver seccion **Configuracion** arriba).
+6. **Base de datos**
+   - Opcion A: `docker compose up -d` en la raiz del proyecto (MySQL + phpMyAdmin; ver puertos en `.env`, p. ej. `PMA_HTTP_PORT`).
+   - Opcion B: MySQL propio; crear base `facial_pro_db` y ejecutar `sql/facial_pro_db_schema.sql` (phpMyAdmin o cliente SQL).
+7. **Ejecutar siempre con el venv activado:** `python main.py`
+   - Comprobar: `which python` debe apuntar a `.../Sistema_FACIAL_PRO/.venv/bin/python`.
+8. **Panel lateral:** lee la tabla **`registro_acceso`** (no solo `empleados`). Para ver filas hace falta datos ahi; phpMyAdmin en `http://127.0.0.1:<PMA_HTTP_PORT>` (puerto por defecto del compose: ver `.env` / comentarios en `docker-compose.yml`).
+9. **Probar MySQL sin cliente `mysql` en el host:**  
+   `docker exec -it sistema_facial_mysql mysql -uTU_USUARIO -p facial_pro_db -e "SELECT 1"`
+
+**Nota:** El punto 1 **no inserta** filas nuevas al detectar un rostro; solo **muestra** lo que ya exista en `registro_acceso`. Las inserciones automaticas iran en otros modulos.
 
 ## Requisitos
 
