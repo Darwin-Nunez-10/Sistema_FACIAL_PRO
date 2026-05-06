@@ -1,28 +1,41 @@
-"""Config from environment variables. Do not store real secrets in source code."""
+"""Configuracion central — lee variables del .env via python-dotenv.
 
+Todas las credenciales viven en .env (nunca en el repositorio).
+Variables requeridas:
+
+    MYSQL_HOST        (default: localhost)
+    MYSQL_PORT        (default: 3306)
+    MYSQL_USER
+    MYSQL_PASSWORD
+    MYSQL_DATABASE    (default: facial_pro_db)
+
+    FERNET_KEY        # Generar UNA sola vez:
+                      # python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+                      # GUARDAR con seguridad — sin ella los nombres cifrados son irrecuperables.
+
+    EMAIL_SENDER      # Correo remitente (p.ej. cuenta Gmail)
+    EMAIL_PASSWORD    # Contrasena de aplicacion Gmail (no la contrasena normal)
+    EMAIL_RECEIVER    # Correo del encargado de seguridad
+    SMTP_HOST         (default: smtp.gmail.com)
+    SMTP_PORT         (default: 587)
+"""
+
+from __future__ import annotations
 import os
-from pathlib import Path
 
-# Project root (directory containing main.py)
-PROJECT_ROOT = Path(__file__).resolve().parent
+# ── MySQL ──────────────────────────────────────────────────────────────────────
+MYSQL_HOST:     str = os.getenv("MYSQL_HOST",     "localhost")
+MYSQL_PORT:     int = int(os.getenv("MYSQL_PORT", "3306"))
+MYSQL_USER:     str = os.getenv("MYSQL_USER",     "")
+MYSQL_PASSWORD: str = os.getenv("MYSQL_PASSWORD", "")
+MYSQL_DATABASE: str = os.getenv("MYSQL_DATABASE", "facial_pro_db")
 
-# Data paths
-KNOWN_FACES_DIR = PROJECT_ROOT / "data" / "known_faces"
-UNKNOWN_FACES_DIR = PROJECT_ROOT / "data" / "unknown_faces"
+# ── Cifrado Fernet ─────────────────────────────────────────────────────────────
+FERNET_KEY: str = os.getenv("FERNET_KEY", "")
 
-# MySQL (localhost -> 127.0.0.1 evita fallo con Docker en Linux: ::1 vs IPv4)
-_raw_mysql_host = os.environ.get("MYSQL_HOST", "127.0.0.1").strip()
-MYSQL_HOST = (
-    "127.0.0.1" if _raw_mysql_host.lower() in ("localhost", "::1") else _raw_mysql_host
-)
-MYSQL_PORT = int(os.environ.get("MYSQL_PORT", "3306"))
-MYSQL_USER = os.environ.get("MYSQL_USER", "")
-MYSQL_PASSWORD = os.environ.get("MYSQL_PASSWORD", "")
-MYSQL_DATABASE = os.environ.get("MYSQL_DATABASE", "facial_pro_db")
-
-# Email (notifications)
-SMTP_HOST = os.environ.get("SMTP_HOST", "")
-SMTP_PORT = int(os.environ.get("SMTP_PORT", "587"))
-SMTP_USER = os.environ.get("SMTP_USER", "")
-SMTP_PASSWORD = os.environ.get("SMTP_PASSWORD", "")
-SECURITY_EMAIL = os.environ.get("SECURITY_EMAIL", "")
+# ── Email / alertas ────────────────────────────────────────────────────────────
+EMAIL_SENDER:   str = os.getenv("EMAIL_SENDER",   "")
+EMAIL_PASSWORD: str = os.getenv("EMAIL_PASSWORD", "")
+EMAIL_RECEIVER: str = os.getenv("EMAIL_RECEIVER", "")
+SMTP_HOST:      str = os.getenv("SMTP_HOST",      "smtp.gmail.com")
+SMTP_PORT:      int = int(os.getenv("SMTP_PORT",  "587"))

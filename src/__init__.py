@@ -1,1 +1,1 @@
-"""Módulos del sistema de control de acceso por reconocimiento facial."""
+"""Modulos del sistema de control de acceso por reconocimiento facial."""
