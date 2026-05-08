@@ -1,7 +1,8 @@
-"""Conexion y consultas MySQL para la interfaz (panel de registros)."""
+"""Conexion y consultas MySQL: panel de registros, empleados y registro de acceso."""
 
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Any
 
 import mysql.connector
@@ -69,6 +70,113 @@ def fetch_recent_access_rows(limit: int = 30) -> list[dict[str, Any]]:
     except MySQLError as exc:
         _last_db_error = f"{exc.errno}: {exc.msg}" if exc.errno else str(exc)
         return []
+    finally:
+        if cursor is not None:
+            try:
+                cursor.close()
+            except MySQLError:
+                pass
+        conn.close()
+
+
+def fetch_employees_for_recognition() -> list[dict[str, Any]]:
+    """
+    Empleados autorizados para cargar rostros conocidos desde disco (ruta_imagen).
+    """
+    global _last_db_error
+    conn = get_connection()
+    if conn is None:
+        return []
+    cursor = None
+    try:
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute(
+            """
+            SELECT id, codigo_empleado, ruta_imagen
+            FROM empleados
+            ORDER BY id
+            """
+        )
+        return list(cursor.fetchall())
+    except MySQLError as exc:
+        _last_db_error = f"{exc.errno}: {exc.msg}" if exc.errno else str(exc)
+        return []
+    finally:
+        if cursor is not None:
+            try:
+                cursor.close()
+            except MySQLError:
+                pass
+        conn.close()
+
+
+def validate_employee_permission(empleado_id: int) -> bool:
+    """
+    Consulta SQL al detectar un rostro identificado: comprueba que el empleado
+    siga existiendo en la tabla (permiso vigente).
+    """
+    global _last_db_error
+    conn = get_connection()
+    if conn is None:
+        return False
+    cursor = None
+    try:
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT 1 FROM empleados WHERE id = %s LIMIT 1",
+            (empleado_id,),
+        )
+        return cursor.fetchone() is not None
+    except MySQLError as exc:
+        _last_db_error = f"{exc.errno}: {exc.msg}" if exc.errno else str(exc)
+        return False
+    finally:
+        if cursor is not None:
+            try:
+                cursor.close()
+            except MySQLError:
+                pass
+        conn.close()
+
+
+def insert_access_log(
+    empleado_id: int | None,
+    estado: str,
+    fecha_hora: datetime | None = None,
+) -> bool:
+    """Inserta un evento en registro_acceso. fecha_hora opcional (microsegundos)."""
+    global _last_db_error
+    conn = get_connection()
+    if conn is None:
+        return False
+    cursor = None
+    try:
+        cursor = conn.cursor()
+        if fecha_hora is None:
+            cursor.execute(
+                """
+                INSERT INTO registro_acceso (empleado_id, estado)
+                VALUES (%s, %s)
+                """,
+                (empleado_id, estado),
+            )
+        else:
+            cursor.execute(
+                """
+                INSERT INTO registro_acceso (empleado_id, fecha_hora, estado)
+                VALUES (%s, %s, %s)
+                """,
+                (empleado_id, fecha_hora, estado),
+            )
+        conn.commit()
+        return True
+    except MySQLError as exc:
+        _last_db_error = f"{exc.errno}: {exc.msg}" if exc.errno else str(exc)
+        try:
+            conn.rollback()
+        except MySQLError:
+            pass
+        return False
     finally:
         if cursor is not None:
             try:

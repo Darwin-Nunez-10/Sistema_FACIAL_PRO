@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import threading
+import time
 import tkinter as tk
 from tkinter import ttk
 from typing import Any
@@ -12,12 +13,20 @@ import face_recognition
 from PIL import Image, ImageTk
 
 import config
-from src.database import db_last_error, fetch_recent_access_rows
+from src.database import (
+    db_last_error,
+    fetch_recent_access_rows,
+    insert_access_log,
+    validate_employee_permission,
+)
+from src.detector import best_match_employee_id, build_known_encodings_from_db
 
 # Escala para acelerar deteccion (face_recognition sobre frame reducido)
 _FACE_SCALE = 0.25
 _VIDEO_WIDTH = 1152
 _PANEL_REFRESH_MS = 2_500
+_RELOAD_KNOWN_FACES_EVERY_FRAMES = 180
+_ACCESS_LOG_COOLDOWN_SEC = 4.0
 _WIN_MIN = (1000, 640)
 _WIN_INITIAL = "1280x780"
 
@@ -106,25 +115,67 @@ class MainWindow:
             self._status_set("No se pudo abrir la camara.")
             return
 
+        frame_n = 0
+        known_ids: list[int] = []
+        known_encs: list = []
+        last_log_mono: dict[str, float] = {}
+
         try:
             while self._running:
                 ok, frame = cap.read()
                 if not ok:
                     continue
 
+                frame_n += 1
+                if (
+                    frame_n % _RELOAD_KNOWN_FACES_EVERY_FRAMES == 1
+                    or not known_encs
+                ):
+                    known_ids, known_encs = build_known_encodings_from_db()
+
                 h, w = frame.shape[:2]
                 small = cv2.resize(frame, (0, 0), fx=_FACE_SCALE, fy=_FACE_SCALE)
                 rgb = cv2.cvtColor(small, cv2.COLOR_BGR2RGB)
                 locations = face_recognition.face_locations(rgb, model="hog")
+                encodings = face_recognition.face_encodings(rgb, locations)
                 inv = 1.0 / _FACE_SCALE
-                for top, right, bottom, left in locations:
+                now_m = time.monotonic()
+
+                for (top, right, bottom, left), enc in zip(locations, encodings):
                     t, r, b, l = (
                         int(top * inv),
                         int(right * inv),
                         int(bottom * inv),
                         int(left * inv),
                     )
-                    cv2.rectangle(frame, (l, t), (r, b), (0, 255, 0), 2)
+                    matched_id = best_match_employee_id(
+                        enc, known_ids, known_encs, tolerance=0.6
+                    )
+                    if matched_id is not None:
+                        permitted = validate_employee_permission(matched_id)
+                        if permitted:
+                            color = (0, 255, 0)
+                            estado = "permitido"
+                            log_key = f"ok_{matched_id}"
+                            emp_for_log: int | None = matched_id
+                        else:
+                            color = (0, 0, 255)
+                            estado = "denegado"
+                            log_key = f"deny_{matched_id}"
+                            # Sin fila en empleados: no usar FK a id inexistente
+                            emp_for_log = None
+                    else:
+                        color = (0, 215, 255)
+                        estado = "no_identificado"
+                        log_key = "unknown"
+                        emp_for_log = None
+
+                    cv2.rectangle(frame, (l, t), (r, b), color, 2)
+
+                    prev = last_log_mono.get(log_key, 0.0)
+                    if now_m - prev >= _ACCESS_LOG_COOLDOWN_SEC:
+                        last_log_mono[log_key] = now_m
+                        insert_access_log(emp_for_log, estado)
 
                 display = cv2.resize(frame, (_VIDEO_WIDTH, int(h * _VIDEO_WIDTH / w)))
                 with self._frame_lock:
