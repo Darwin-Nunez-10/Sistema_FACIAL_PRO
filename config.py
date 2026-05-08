@@ -30,4 +30,4 @@ SECURITY_EMAIL = os.environ.get("SECURITY_EMAIL", "")
 # Alertas e Intrusos
 ALERT_SOUND_ENABLED = os.environ.get("ALERT_SOUND_ENABLED", "True").lower() == "true"
 ALERT_SOUND_PATH = PROJECT_ROOT / "assets" / "alert.wav"
-INTRUDER_COOLDOWN_SEC = float(os.environ.get("INTRUDER_COOLDOWN_SEC", "15.0"))
+INTRUDER_COOLDOWN_SEC = float(os.environ.get("INTRUDER_COOLDOWN_SEC", "5.0"))

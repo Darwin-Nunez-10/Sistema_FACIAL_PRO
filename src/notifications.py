@@ -10,42 +10,54 @@ import numpy as np
 
 import config
 
+# Configuración de logging básica
+logging.basicConfig(level=logging.INFO)
+
 # Intentar importar pygame para alertas sonoras
+_SOUND_LIB_AVAILABLE = False
+_ALERT_SOUND = None
+
 try:
     import pygame
     pygame.mixer.init()
     _SOUND_LIB_AVAILABLE = True
+    
+    # Pre-cargar el sonido si existe para mayor rapidez
+    if config.ALERT_SOUND_PATH.exists():
+        _ALERT_SOUND = pygame.mixer.Sound(str(config.ALERT_SOUND_PATH))
+        logging.info("Sistema de audio iniciado y sonido de alerta cargado.")
+    else:
+        logging.warning(f"Archivo de audio no encontrado en la precarga: {config.ALERT_SOUND_PATH}")
 except ImportError:
-    _SOUND_LIB_AVAILABLE = False
     logging.warning("pygame no está instalado. Las alertas sonoras estarán desactivadas.")
 except Exception as e:
-    _SOUND_LIB_AVAILABLE = False
-    logging.error(f"Error al inicializar pygame mixer: {e}")
+    logging.error(f"Error al inicializar el sistema de audio: {e}")
 
 def play_alert_sound() -> None:
-    """Reproduce el sonido de alerta si está habilitado y disponible."""
+    """Reproduce el sonido de alerta de forma inmediata."""
+    global _ALERT_SOUND
+    
     if not config.ALERT_SOUND_ENABLED or not _SOUND_LIB_AVAILABLE:
         return
     
-    sound_path = config.ALERT_SOUND_PATH
-    if not sound_path.exists():
-        logging.warning(f"Archivo de alerta no encontrado: {sound_path}")
-        return
-
     try:
-        # Cargar y reproducir (no bloqueante)
-        pygame.mixer.music.load(str(sound_path))
-        pygame.mixer.music.play()
+        # Si no se cargó al inicio, intentar cargarlo ahora
+        if _ALERT_SOUND is None:
+            if config.ALERT_SOUND_PATH.exists():
+                _ALERT_SOUND = pygame.mixer.Sound(str(config.ALERT_SOUND_PATH))
+            else:
+                logging.error(f"No se pudo reproducir: archivo no existe {config.ALERT_SOUND_PATH}")
+                return
+
+        # Reproducir sonido
+        _ALERT_SOUND.play()
+        logging.info("Reproduciendo alerta sonora...")
     except Exception as e:
-        logging.error(f"No se pudo reproducir el sonido de alerta: {e}")
+        logging.error(f"Error al reproducir sonido: {e}")
 
 def save_intruder_evidence(frame: np.ndarray, face_location: tuple[int, int, int, int] | None = None) -> str | None:
-    """
-    Guarda una captura del intruso en la carpeta de auditoría.
-    Si se proporciona face_location, se puede resaltar o recortar el rostro.
-    """
+    """Guarda una captura del intruso en la carpeta de auditoría."""
     try:
-        # Asegurar que el directorio de salida exista
         output_dir = config.UNKNOWN_FACES_DIR
         output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -53,18 +65,19 @@ def save_intruder_evidence(frame: np.ndarray, face_location: tuple[int, int, int
         filename = f"intruso_{timestamp}.jpg"
         filepath = output_dir / filename
 
-        # Dibujar un recuadro si se proporciona la ubicación
         image_to_save = frame.copy()
         if face_location:
             t, r, b, l = face_location
-            cv2.rectangle(image_to_save, (l, t), (r, b), (0, 0, 255), 2)
-            cv2.putText(image_to_save, "INTRUSO", (l, t - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 0, 255), 2)
+            # Dibujar recuadro y texto de advertencia
+            cv2.rectangle(image_to_save, (l, t), (r, b), (0, 0, 255), 3)
+            cv2.putText(image_to_save, "ALERTA: INTRUSO", (l, t - 15), 
+                        cv2.FONT_HERSHEY_DUPLEX, 0.8, (0, 0, 255), 2)
 
         ok = cv2.imwrite(str(filepath), image_to_save)
         if ok:
-            logging.info(f"Evidencia guardada: {filepath}")
+            logging.info(f"Evidencia guardada exitosamente: {filepath}")
             return str(filepath)
         return None
     except Exception as e:
-        logging.error(f"Error al guardar evidencia del intruso: {e}")
+        logging.error(f"Error crítico al guardar evidencia: {e}")
         return None
