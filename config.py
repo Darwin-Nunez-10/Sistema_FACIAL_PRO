@@ -26,3 +26,8 @@ SMTP_PORT = int(os.environ.get("SMTP_PORT", "587"))
 SMTP_USER = os.environ.get("SMTP_USER", "")
 SMTP_PASSWORD = os.environ.get("SMTP_PASSWORD", "")
 SECURITY_EMAIL = os.environ.get("SECURITY_EMAIL", "")
+
+# Alertas e Intrusos
+ALERT_SOUND_ENABLED = os.environ.get("ALERT_SOUND_ENABLED", "True").lower() == "true"
+ALERT_SOUND_PATH = PROJECT_ROOT / "assets" / "alert.wav"
+INTRUDER_COOLDOWN_SEC = float(os.environ.get("INTRUDER_COOLDOWN_SEC", "15.0"))

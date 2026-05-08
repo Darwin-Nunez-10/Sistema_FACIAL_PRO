@@ -13,3 +13,6 @@ cryptography>=41.0.0
 
 # smtplib: biblioteca estandar de Python (sin pip)
 # tkinter: incluido con Python (paquete python3-tk en algunas distros Linux)
+
+# Sonido
+pygame>=2.5.0

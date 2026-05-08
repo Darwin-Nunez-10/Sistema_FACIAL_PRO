@@ -20,6 +20,7 @@ from src.database import (
     validate_employee_permission,
 )
 from src.detector import best_match_employee_id, build_known_encodings_from_db
+from src.notifications import play_alert_sound, save_intruder_evidence
 
 # Escala para acelerar deteccion (face_recognition sobre frame reducido)
 _FACE_SCALE = 0.25
@@ -176,6 +177,14 @@ class MainWindow:
                     if now_m - prev >= _ACCESS_LOG_COOLDOWN_SEC:
                         last_log_mono[log_key] = now_m
                         insert_access_log(emp_for_log, estado)
+
+                        # Alerta y evidencia para intrusos o accesos denegados
+                        if estado in ("no_identificado", "denegado"):
+                            prev_intruder = last_log_mono.get("intruder_alert", 0.0)
+                            if now_m - prev_intruder >= config.INTRUDER_COOLDOWN_SEC:
+                                last_log_mono["intruder_alert"] = now_m
+                                play_alert_sound()
+                                save_intruder_evidence(frame, (t, r, b, l))
 
                 display = cv2.resize(frame, (_VIDEO_WIDTH, int(h * _VIDEO_WIDTH / w)))
                 with self._frame_lock:
