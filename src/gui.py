@@ -5,6 +5,7 @@ from __future__ import annotations
 import threading
 import time
 import tkinter as tk
+from datetime import datetime
 from tkinter import ttk
 from typing import Any
 
@@ -20,7 +21,7 @@ from src.database import (
     validate_employee_permission,
 )
 from src.detector import best_match_employee_id, build_known_encodings_from_db
-from src.notifications import play_alert_sound, save_intruder_evidence
+from src.notifications import play_alert_sound, save_intruder_evidence, send_intruder_alert_email
 
 # Escala para acelerar deteccion (face_recognition sobre frame reducido)
 _FACE_SCALE = 0.25
@@ -184,7 +185,8 @@ class MainWindow:
                             if now_m - prev_intruder >= config.INTRUDER_COOLDOWN_SEC:
                                 last_log_mono["intruder_alert"] = now_m
                                 play_alert_sound()
-                                save_intruder_evidence(frame, (t, r, b, l))
+                                evidence_path = save_intruder_evidence(frame, (t, r, b, l))
+                                send_intruder_alert_email(evidence_path, datetime.now())
 
                 display = cv2.resize(frame, (_VIDEO_WIDTH, int(h * _VIDEO_WIDTH / w)))
                 with self._frame_lock:

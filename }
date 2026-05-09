@@ -1,0 +1,18 @@
+# Copiar a .env y reemplazar los valores genericos. No commitear .env.
+
+MYSQL_HOST=127.0.0.1
+MYSQL_PORT=3306
+MYSQL_USER=adamag124
+MYSQL_PASSWORD=adamag124!
+MYSQL_DATABASE=facial_pro_db
+
+# Docker Compose (MySQL + phpMyAdmin)
+MYSQL_ROOT_PASSWORD=YOUR_MYSQL_ROOT_PASSWORD
+# Puerto web de phpMyAdmin en tu maquina (si 8090 esta ocupado, cambie, ej. 8091)
+PMA_HTTP_PORT=8090
+
+SMTP_HOST=SMTP.GOOGLE.COM
+SMTP_PORT=587
+SMTP_USER=YOUR_SMTP_USER
+SMTP_PASSWORD=YOUR_SMTP_PASSWORD
+SECURITY_EMAIL=YOUR_SECURITY_EMAIL

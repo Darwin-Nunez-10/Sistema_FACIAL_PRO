@@ -1,8 +1,13 @@
-"""Alertas sonoras y captura de evidencia de intrusos."""
+"""Alertas sonoras, captura de evidencia y notificaciones por correo de intrusos."""
 
 import logging
-import time
+import smtplib
+import threading
 from datetime import datetime
+from email import encoders
+from email.mime.base import MIMEBase
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 from pathlib import Path
 
 import cv2
@@ -81,3 +86,53 @@ def save_intruder_evidence(frame: np.ndarray, face_location: tuple[int, int, int
     except Exception as e:
         logging.error(f"Error crítico al guardar evidencia: {e}")
         return None
+
+
+def send_intruder_alert_email(image_path: str | None, event_dt: datetime) -> None:
+    """Envía correo de alerta con la foto del intruso en un thread secundario."""
+    if not all([config.SMTP_HOST, config.SMTP_USER, config.SMTP_PASSWORD, config.SECURITY_EMAIL]):
+        logging.warning("Credenciales SMTP incompletas en .env — correo de alerta omitido.")
+        return
+    threading.Thread(
+        target=_email_worker,
+        args=(image_path, event_dt),
+        daemon=True,
+    ).start()
+
+
+def _email_worker(image_path: str | None, event_dt: datetime) -> None:
+    dt_str = event_dt.strftime("%Y-%m-%d %H:%M:%S")
+    try:
+        msg = MIMEMultipart()
+        msg["From"] = config.SMTP_USER
+        msg["To"] = config.SECURITY_EMAIL
+        msg["Subject"] = f"ALERTA: Acceso no autorizado — {dt_str}"
+
+        msg.attach(MIMEText(
+            f"Se detectó un intento de acceso no autorizado.\n\n"
+            f"Fecha y hora: {dt_str}\n"
+            f"Se adjunta la fotografía capturada por el sistema.\n\n"
+            f"— Sistema FACIAL PRO",
+            "plain",
+        ))
+
+        if image_path and Path(image_path).is_file():
+            with open(image_path, "rb") as f:
+                part = MIMEBase("image", "jpeg")
+                part.set_payload(f.read())
+            encoders.encode_base64(part)
+            part.add_header(
+                "Content-Disposition",
+                f'attachment; filename="{Path(image_path).name}"',
+            )
+            msg.attach(part)
+
+        with smtplib.SMTP(config.SMTP_HOST, config.SMTP_PORT) as server:
+            server.ehlo()
+            server.starttls()
+            server.login(config.SMTP_USER, config.SMTP_PASSWORD)
+            server.sendmail(config.SMTP_USER, config.SECURITY_EMAIL, msg.as_string())
+
+        logging.info(f"Correo de alerta enviado a {config.SECURITY_EMAIL}")
+    except Exception as e:
+        logging.error(f"Error al enviar correo de alerta: {e}")
